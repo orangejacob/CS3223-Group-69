@@ -14,6 +14,10 @@ public class CreateStudentDB {
          stmt.executeUpdate(s);
          System.out.println("Table STUDENT created.");
 
+         s = "create index idx_majorid on STUDENT(MajorId) using hash";
+         stmt.executeUpdate(s);
+         System.out.println("Index on MajorId created.");
+
          s = "insert into STUDENT(SId, SName, MajorId, GradYear) values ";
          String[] studvals = {"(1, 'joe', 10, 2021)",
                "(2, 'amy', 20, 2020)",

@@ -240,7 +240,18 @@ public class Parser {
       lex.eatDelim('(');
       String fldname = field();
       lex.eatDelim(')');
-      return new CreateIndexData(idxname, tblname, fldname);
+      lex.eatKeyword("using");
+
+      //Main add on for lab 2 here
+      String mtdname;
+      if (lex.matchKeyword("btree")) {
+         lex.eatKeyword("btree");
+         mtdname = "btree";
+      } else {
+         lex.eatKeyword("hash");
+         mtdname = "hash";
+      }
+      return new CreateIndexData(idxname, tblname, fldname, mtdname);
    }
 }
 
