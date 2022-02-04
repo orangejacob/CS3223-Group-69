@@ -35,6 +35,7 @@ public class IndexInfo {
                     Transaction tx,  StatInfo si) {
       this.idxname = idxname;
       this.fldname = fldname;
+      this.mtdname = mtdname;
       this.tx = tx;
       this.tblSchema = tblSchema;
       this.idxLayout = createIdxLayout();
