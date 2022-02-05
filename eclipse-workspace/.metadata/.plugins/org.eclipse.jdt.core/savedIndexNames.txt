@@ -1,4 +1,0 @@
-INDEX VERSION 1.131+/Users/jiachengkoh/CS3223-Group-69/eclipse-workspace/.metadata/.plugins/org.eclipse.jdt.core
-1917519394.index
-2913733568.index
-1827129675.index
