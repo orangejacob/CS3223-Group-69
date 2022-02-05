@@ -115,7 +115,26 @@ public class IndexUpdatePlanner implements UpdatePlanner {
    }
    
    public int executeCreateIndex(CreateIndexData data, Transaction tx) {
+	   
       mdm.createIndex(data.indexName(), data.tableName(), data.fieldName(), data.methodName(), tx);
-      return 0;
+      
+      String tblname = data.tableName();
+      Plan p = new TablePlan(tx, tblname, mdm);
+      
+      // first, insert the record
+      UpdateScan s = (UpdateScan) p.open();
+      Map<String,IndexInfo> indexes = mdm.getIndexInfo(tblname, tx);
+      s.beforeFirst();
+      while (s.next() == true) {
+    	  IndexInfo ii = indexes.get(data.fieldName());
+          if (ii != null) {
+             Index idx = ii.open();
+             idx.insert(s.getVal(data.fieldName()), s.getRid());
+             idx.close();
+          }
+      }
+      
+      s.close();
+      return 1;
    }
 }

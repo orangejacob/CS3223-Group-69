@@ -47,7 +47,7 @@ public class IndexInfo {
     * @return the Index object associated with this information
     */
    public Index open() {
-//      return new HashIndex(tx, idxname, idxLayout);
+//    return new HashIndex(tx, idxname, idxLayout);
 //    return new BTreeIndex(tx, idxname, idxLayout);
       if (mtdname.equals("hash")) {
          return new HashIndex(tx, idxname, idxLayout);
