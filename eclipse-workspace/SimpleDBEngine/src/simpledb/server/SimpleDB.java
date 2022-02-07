@@ -55,7 +55,7 @@ public class SimpleDB {
          tx.recover();
       }
       mdm = new MetadataMgr(isnew, tx);
-//      QueryPlanner qp = new BasicQueryPlanner(mdm);
+      //QueryPlanner qp = new BasicQueryPlanner(mdm);
 //      UpdatePlanner up = new BasicUpdatePlanner(mdm);
       QueryPlanner qp = new HeuristicQueryPlanner(mdm);
       UpdatePlanner up = new IndexUpdatePlanner(mdm);
