@@ -10,7 +10,7 @@ import simpledb.query.*;
  */
 public class RecordComparator implements Comparator<Scan> {
    private List<String> fields;
-   private HashMap<String, Integer> sortFields;
+   private LinkedHashMap<String, Integer> sortFields;
    
    /**
     * Create a comparator using the specified fields,
@@ -24,7 +24,7 @@ public class RecordComparator implements Comparator<Scan> {
    }
 	   
    // Lab 3 overload:
-   public RecordComparator(HashMap<String, Integer> sortFields) {
+   public RecordComparator(LinkedHashMap<String, Integer> sortFields) {
       this.sortFields = sortFields;
    }
    

@@ -59,7 +59,7 @@ public class Parser {
       List<String> fields = selectList();
       lex.eatKeyword("from");
       Collection<String> tables = tableList();
-      HashMap<String, Integer> orders = new HashMap<>();
+      LinkedHashMap<String, Integer> sortFields = new LinkedHashMap<>();
     		  
       Predicate pred = new Predicate();
       
@@ -71,14 +71,14 @@ public class Parser {
       if (lex.matchKeyword("order")) {
     	  lex.eatKeyword("order");
     	  lex.eatKeyword("by");
-    	  orders = orderList();
+    	  sortFields = selectSortList();
       }
       
-      return new QueryData(fields, tables, pred, orders);
+      return new QueryData(fields, tables, pred, sortFields);
    }
    
-   private HashMap<String, Integer> orderList(){
-      HashMap<String, Integer> L = new HashMap<>();
+   private LinkedHashMap<String, Integer> selectSortList(){
+	   LinkedHashMap<String, Integer> L = new LinkedHashMap<>();
       String field = field();
       L.put(field, 1);
       if(lex.matchKeyword("desc")) {
@@ -90,7 +90,7 @@ public class Parser {
       
       if (lex.matchDelim(',')) {
     	  lex.eatDelim(',');
-    	  L.putAll(orderList());
+    	  L.putAll(selectSortList());
       }
       
       return L;

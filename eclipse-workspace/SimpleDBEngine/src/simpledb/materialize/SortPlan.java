@@ -30,7 +30,7 @@ public class SortPlan implements Plan {
    }
    
    // Lab 3: Overload
-   public SortPlan(Transaction tx, Plan p, HashMap<String, Integer> sortFields) {
+   public SortPlan(Transaction tx, Plan p, LinkedHashMap<String, Integer> sortFields) {
       this.tx = tx;
       this.p = p;
       sch = p.schema();

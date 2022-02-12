@@ -12,12 +12,12 @@ public class QueryData {
    private List<String> fields;
    private Collection<String> tables;
    private Predicate pred;
-   private HashMap<String, Integer> sortFields;
+   private LinkedHashMap<String, Integer> sortFields;
    
    /**
     * Saves the field and table list and predicate.
     */
-   public QueryData(List<String> fields, Collection<String> tables, Predicate pred, HashMap<String,Integer> sortFields) {
+   public QueryData(List<String> fields, Collection<String> tables, Predicate pred, LinkedHashMap<String,Integer> sortFields) {
       this.fields = fields;
       this.tables = tables;
       this.pred = pred;
@@ -44,7 +44,7 @@ public class QueryData {
     * Returns the tables mentioned in the from clause.
     * @return a collection of table names
     */
-   public HashMap<String, Integer> sortFields() {
+   public LinkedHashMap<String, Integer> sortFields() {
       return sortFields;
    }
    
