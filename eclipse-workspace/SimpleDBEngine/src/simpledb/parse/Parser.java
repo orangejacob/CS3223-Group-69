@@ -92,9 +92,7 @@ public class Parser {
     	  lex.eatDelim(',');
     	  L.putAll(selectSortList());
       }
-      
       return L;
-
    }
    
    private List<String> selectList() {
