@@ -21,11 +21,11 @@ public class PlannerTest1 {
          planner.executeUpdate(cmd, tx);
       }
 
-      String qry = "select B from T1 where A=10";
+      String qry = "select A from T1";
       Plan p = planner.createQueryPlan(qry, tx);
       Scan s = p.open();
       while (s.next())
-         System.out.println(s.getString("b")); 
+         System.out.println(s.getVal("a")); 
       s.close();
       tx.commit();
    }

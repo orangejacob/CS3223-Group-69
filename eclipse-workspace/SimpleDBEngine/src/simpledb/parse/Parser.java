@@ -59,12 +59,40 @@ public class Parser {
       List<String> fields = selectList();
       lex.eatKeyword("from");
       Collection<String> tables = tableList();
+      LinkedHashMap<String, Integer> sortFields = new LinkedHashMap<>();
+    		  
       Predicate pred = new Predicate();
+      
       if (lex.matchKeyword("where")) {
          lex.eatKeyword("where");
          pred = predicate();
       }
-      return new QueryData(fields, tables, pred);
+      
+      if (lex.matchKeyword("order")) {
+    	  lex.eatKeyword("order");
+    	  lex.eatKeyword("by");
+    	  sortFields = selectSortList();
+      }
+      
+      return new QueryData(fields, tables, pred, sortFields);
+   }
+   
+   private LinkedHashMap<String, Integer> selectSortList(){
+	   LinkedHashMap<String, Integer> L = new LinkedHashMap<>();
+      String field = field();
+      L.put(field, 1);
+      if(lex.matchKeyword("desc")) {
+    	  lex.eatKeyword("desc");
+    	  L.put(field, -1);
+      } else if (lex.matchKeyword("asc")) {
+    	 lex.eatKeyword("asc");
+      }
+      
+      if (lex.matchDelim(',')) {
+    	  lex.eatDelim(',');
+    	  L.putAll(selectSortList());
+      }
+      return L;
    }
    
    private List<String> selectList() {

@@ -22,11 +22,19 @@ public class SortPlan implements Plan {
     * @param sortfields the fields to sort by
     * @param tx the calling transaction
     */
-   public SortPlan(Transaction tx, Plan p, List<String> sortfields) {
+   public SortPlan(Transaction tx, Plan p, List<String> fields) {
       this.tx = tx;
       this.p = p;
       sch = p.schema();
-      comp = new RecordComparator(sortfields);
+      comp = new RecordComparator(fields);
+   }
+   
+   // Lab 3: Overload
+   public SortPlan(Transaction tx, Plan p, LinkedHashMap<String, Integer> sortFields) {
+      this.tx = tx;
+      this.p = p;
+      sch = p.schema();
+      comp = new RecordComparator(sortFields);
    }
    
    /**
@@ -39,7 +47,8 @@ public class SortPlan implements Plan {
       Scan src = p.open();
       List<TempTable> runs = splitIntoRuns(src);
       src.close();
-      while (runs.size() > 2)
+      // Change to 1 sorted run.
+      while (runs.size() > 1)
          runs = doAMergeIteration(runs);
       return new SortScan(runs, comp);
    }
@@ -128,16 +137,16 @@ public class SortPlan implements Plan {
       boolean hasmore2 = src2.next();
       while (hasmore1 && hasmore2)
          if (comp.compare(src1, src2) < 0)
-         hasmore1 = copy(src1, dest);
-      else
-         hasmore2 = copy(src2, dest);
+        	 hasmore1 = copy(src1, dest);
+         else
+        	 hasmore2 = copy(src2, dest);
       
-      if (hasmore1)
-         while (hasmore1)
-         hasmore1 = copy(src1, dest);
-      else
-         while (hasmore2)
-         hasmore2 = copy(src2, dest);
+      	if (hasmore1)
+      		while (hasmore1)
+      			hasmore1 = copy(src1, dest);
+      	else
+      		while (hasmore2)
+      			hasmore2 = copy(src2, dest);
       src1.close();
       src2.close();
       dest.close();

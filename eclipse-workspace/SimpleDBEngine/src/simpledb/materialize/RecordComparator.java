@@ -10,14 +10,22 @@ import simpledb.query.*;
  */
 public class RecordComparator implements Comparator<Scan> {
    private List<String> fields;
+   private LinkedHashMap<String, Integer> sortFields;
    
    /**
     * Create a comparator using the specified fields,
     * using the ordering implied by its iterator.
     * @param fields a list of field names
     */
+   
+   
    public RecordComparator(List<String> fields) {
       this.fields = fields;
+   }
+	   
+   // Lab 3 overload:
+   public RecordComparator(LinkedHashMap<String, Integer> sortFields) {
+      this.sortFields = sortFields;
    }
    
    /**
@@ -33,13 +41,24 @@ public class RecordComparator implements Comparator<Scan> {
     * @return the result of comparing each scan's current record according to the field list
     */
    public int compare(Scan s1, Scan s2) {
+	   
+	   for(Map.Entry<String, Integer> entry: sortFields.entrySet()) {
+		   // Value 1 = Asc, -1 = Dsc
+		   Constant val1 = s1.getVal(entry.getKey());
+		   Constant val2 = s2.getVal(entry.getKey());
+		   int result = val1.compareTo(val2);
+		   if (result != 0)
+			   return result * entry.getValue();
+	   }
+	   
+	   /*
       for (String fldname : fields) {
          Constant val1 = s1.getVal(fldname);
          Constant val2 = s2.getVal(fldname);
          int result = val1.compareTo(val2);
          if (result != 0)
             return result;
-      }
+      }*/
       return 0;
    }
 }
