@@ -4,6 +4,8 @@ import java.util.*;
 import static simpledb.metadata.TableMgr.MAX_NAME;
 import simpledb.tx.Transaction;
 import simpledb.record.TableScan;
+import simpledb.multibuffer.MultibufferProductPlan;
+import simpledb.plan.Plan;
 import simpledb.record.*;
 
 /**

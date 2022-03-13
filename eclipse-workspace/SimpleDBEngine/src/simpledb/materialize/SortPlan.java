@@ -47,7 +47,8 @@ public class SortPlan implements Plan {
       Scan src = p.open();
       List<TempTable> runs = splitIntoRuns(src);
       src.close();
-      while (runs.size() > 2)
+      // Change to 1 sorted run.
+      while (runs.size() > 1)
          runs = doAMergeIteration(runs);
       return new SortScan(runs, comp);
    }
