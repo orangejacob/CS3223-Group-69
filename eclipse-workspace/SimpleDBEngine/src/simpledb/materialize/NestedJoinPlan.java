@@ -15,9 +15,9 @@ public class NestedJoinPlan implements Plan {
 	private Schema sch = new Schema();
 
 	/**
-	 * Creates a mergejoin plan for the two specified queries.
-	 * The RHS must be materialized after it is sorted, 
-	 * in order to deal with possible duplicates.
+	 * Creates a nested join plan for the two specified queries.
+	 * Uses the Plan with lesser records as Outer and the Plan
+	 * with more records as Inner, to reduce the number of BlockAccessed.
 	 * @param p1 the LHS query plan
 	 * @param p2 the RHS query plan
 	 * @param fldname1 the LHS join field
@@ -31,26 +31,24 @@ public class NestedJoinPlan implements Plan {
 		this.p2 = p2;
 		sch.addAll(p1.schema());
 		sch.addAll(p2.schema());
-		this.outerPlan = p1.recordsOutput() < p2.recordsOutput() ? p1 : p2;
-		this.innerPlan = p1.recordsOutput() < p2.recordsOutput() ? p2 : p1;
-		
 		if (p1.recordsOutput() < p2.recordsOutput()) {
-			this.outerPlan = p1;
-			this.outerFldName = fldname1;
 			this.innerPlan = p2;
+			this.outerPlan = p1;
 			this.innerFldName = fldname2;
+			this.outerFldName = fldname1;
 		}else {
 			this.innerPlan = p1;
-			this.innerFldName = fldname1;
 			this.outerPlan = p2;
+			this.innerFldName = fldname1;
 			this.outerFldName = fldname2;
 		}
 	}
 
-	/** The method first sorts its two underlying scans
-	 * on their join field. It then returns a mergejoin scan
-	 * of the two sorted table scans.
-	 * @see simpledb.plan.Plan#open()
+	/**
+	 * Open inner scan and create a TempTable for outer scan.
+	 * TempTable is to allow the use of ChunkSize, implementing
+	 * Nested Block Join, hence reducing overall Block Accessed.
+	 * Returns NestedJoinScan.
 	 */
 	public Scan open() {
 		Scan inner = this.innerPlan.open();
@@ -60,28 +58,25 @@ public class NestedJoinPlan implements Plan {
 
 	/**
 	 * Return the number of block acceses required to
-	 * mergejoin the sorted tables.
-	 * Since a mergejoin can be preformed with a single
-	 * pass through each table, the method returns
-	 * the sum of the block accesses of the 
-	 * materialized sorted tables.
+	 * nested block join the tables.
+	 * Formula: |Outer| + Ceil(|Outer| / Block Size) * |Inner|. 
 	 * It does <i>not</i> include the one-time cost
-	 * of materializing and sorting the records.
+	 * of materializing the records.
 	 * @see simpledb.plan.Plan#blocksAccessed()
 	 */
 	public int blocksAccessed() {
-		return (int) Math.round(outerPlan.blocksAccessed() + 
-				(Math.ceil(outerPlan.blocksAccessed() / (tx.availableBuffs() - 2)) * innerPlan.blocksAccessed()));
+		int blockSize  = tx.availableBuffs() - 2; // 1 for Input, 1 for output.
+		int innerPages = innerPlan.blocksAccessed();
+		int outerPages = outerPlan.blocksAccessed();
+		return (int) Math.round(outerPages + Math.ceil(outerPages / blockSize) * innerPages);
 	}
 
 	/**
-	 * Return the number of records in the join.
-	 * Assuming uniform distribution, the formula is:
-	 * <pre> R(join(p1,p2)) = R(p1)*R(p2)/max{V(p1,F1),V(p2,F2)}</pre>
-	 * @see simpledb.plan.Plan#recordsOutput()
+	 * Estimates the number of output records.
+	 * For Nested Block, at most it will be inner * outer.
 	 */
 	public int recordsOutput() {
-		return this.outerPlan.recordsOutput() * this.outerPlan.recordsOutput();
+		return innerPlan.recordsOutput() * outerPlan.recordsOutput();
 	}
 
 	/**
@@ -105,7 +100,9 @@ public class NestedJoinPlan implements Plan {
 	public Schema schema() {
 		return sch;
 	}
-
+	
+	
+	// Lab 4: Logic from MultiBuffer, creates a TempTable from Plan.
 	private TempTable copyRecordsFrom(Plan p) {
 		Scan   src = p.open(); 
 		Schema sch = p.schema();

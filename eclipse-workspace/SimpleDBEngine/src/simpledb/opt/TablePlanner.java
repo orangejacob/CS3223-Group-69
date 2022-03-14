@@ -68,104 +68,47 @@ class TablePlanner {
 		Predicate joinpred = mypred.joinSubPred(myschema, currsch);
 		if (joinpred == null)
 			return null;
-
-		// Merge Plan set as cheapest first.
-		Plan cheapestPlan = makeMergeJoin(current, currsch, joinpred);
-
 		
-		if(cheapestPlan != null)
-			System.out.println("Sort Merge Join Cost: " + cheapestPlan.blocksAccessed());
-
-		// Calculate Index Join + Set cheapest
-		Plan indexPlan = makeIndexJoin(current, currsch);
-		if(indexPlan != null) {
-			System.out.println("Indexed Join Cost: " + indexPlan.blocksAccessed());
-			if (cheapestPlan == null)
-				cheapestPlan = indexPlan;
-			else if(cheapestPlan.blocksAccessed() > indexPlan.blocksAccessed())
+		// Default: Make Product Plan -> can't fail.
+		Plan cheapestPlan = makeProductJoin(current, currsch);  
+		// Lab 4: Merge Join.
+		Plan mergePlan    = makeMergeJoin(current, currsch, joinpred);
+		// Lab 4: Index Based Join.
+		Plan indexPlan    = makeIndexJoin(current, currsch);
+		// Lab 4: Nested Loop Join
+		Plan nestedPlan   = makeNestedBlockJoin(current, currsch, joinpred);
+		// Lab 5: Hash Partition Join
+		Plan hashPlan     = makeHashJoin(current, currsch, joinpred);
+		
+		// Find the cheapest plan out of the above, based on Block Accessed.
+		if (cheapestPlan != null)
+			System.out.println("Product Join Cost: " + cheapestPlan.blocksAccessed());
+		
+		if (mergePlan != null) {
+			System.out.println("Merge Sort Join Cost: " + mergePlan.blocksAccessed());
+			if (mergePlan.blocksAccessed() > cheapestPlan.blocksAccessed())
+				cheapestPlan = mergePlan;
+		}
+		
+		if (indexPlan != null) {
+			System.out.println("Index Based Join Cost: " + indexPlan.blocksAccessed());
+			if (indexPlan.blocksAccessed() > cheapestPlan.blocksAccessed())
 				cheapestPlan = indexPlan;
 		}
-
-		/* Calculate Nested Join + Set cheapest
-		Plan nestedPlan = makeNestedBlockJoin(current, currsch, joinpred);
-		if(nestedPlan != null) {
-			System.out.println("Nested Join Cost: " + nestedPlan.blocksAccessed());      
-			if (cheapestPlan == null)
+		
+		if (nestedPlan != null) {
+			System.out.println("Nested Loops Join Cost: " + nestedPlan.blocksAccessed());
+			if (nestedPlan.blocksAccessed() > cheapestPlan.blocksAccessed())
 				cheapestPlan = nestedPlan;
-			else if(cheapestPlan.blocksAccessed() > nestedPlan.blocksAccessed())
-				cheapestPlan = nestedPlan;
-		}*/
-
-		/* Calculate Product Plan + Set Cheapest
-		Plan productPlan = makeProductJoin(current, currsch);
-		if(productPlan != null) {
-			System.out.println("Product Join Cost: " + productPlan.blocksAccessed());
-			if (cheapestPlan == null)
-				cheapestPlan = productPlan;
-			else if(cheapestPlan.blocksAccessed() > productPlan.blocksAccessed())
-				cheapestPlan = productPlan;
-		}*/
+		}
+		
+		if (hashPlan != null) {
+			System.out.println("Hash Join Cost: " + hashPlan.blocksAccessed());
+			if (hashPlan.blocksAccessed() > cheapestPlan.blocksAccessed())
+				cheapestPlan = hashPlan;
+		}
 
 		return cheapestPlan;
-	}
-
-	/**
-	 * Constructs a product plan of the specified plan and
-	 * this table.
-	 * @param current the specified plan
-	 * @return a product plan of the specified plan and this table
-	 */
-	public Plan makeProductPlan(Plan current) {
-		Plan p = addSelectPred(myplan);
-		return new MultibufferProductPlan(tx, current, p);
-	}
-
-	private Plan makeIndexSelect() {
-		for (String fldname : indexes.keySet()) {
-			Constant val = mypred.equatesWithConstant(fldname);
-			if (val != null) {
-				IndexInfo ii = indexes.get(fldname);
-				System.out.println("index on " + fldname + " used");
-				return new IndexSelectPlan(myplan, ii, val);
-			}
-		}
-		return null;
-	}
-
-	private Plan makeIndexJoin(Plan current, Schema currsch) {
-		for (String fldname : indexes.keySet()) {
-			String outerfield = mypred.equatesWithField(fldname);
-			if (outerfield != null && currsch.hasField(outerfield)) {
-				IndexInfo ii = indexes.get(fldname);
-				Plan p = new IndexJoinPlan(current, myplan, ii, outerfield);
-				p = addSelectPred(p);
-				return addJoinPred(p, currsch);
-			}
-		}
-		return null;
-	}
-
-	// Lab 4 - Nested Loop join.
-	private Plan makeNestedBlockJoin(Plan current, Schema currsch, Predicate joinpred) {
-		// Split the join predicate. 
-		String[] joinedFields = joinpred.toString().split("=");
-		Plan p = new NestedJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
-	    p = addSelectPred(p);
-	    return addJoinPred(p, currsch);
-	}
-
-	// Lab 4 - MergeJoin based on Joined Fields
-	private Plan makeMergeJoin(Plan current, Schema currsch, Predicate joinpred) {
-		// Split the join predicate. 
-		String[] joinedFields = joinpred.toString().split("=");
-		Plan p = new MergeJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
-		p = addSelectPred(p);
-		return addJoinPred(p, currsch);
-	}
-
-	private Plan makeProductJoin(Plan current, Schema currsch) {
-		Plan p = makeProductPlan(current);
-		return addJoinPred(p, currsch);
 	}
 
 	private Plan addSelectPred(Plan p) {
@@ -183,4 +126,106 @@ class TablePlanner {
 		else
 			return p;
 	}
+
+	private Plan makeIndexSelect() {
+		for (String fldname : indexes.keySet()) {
+			Constant val = mypred.equatesWithConstant(fldname);
+			if (val != null) {
+				IndexInfo ii = indexes.get(fldname);
+				// If indexType is hash, only execute for equality predicate.
+				if(ii.getIndexType().equals("hash")) {
+					String comparatorType = mypred.fieldComparatorType(fldname);
+					if(comparatorType != null && !comparatorType.equals("=")) 
+						return null;
+				}
+				System.out.println("index on " + fldname + " used");
+				return new IndexSelectPlan(myplan, ii, val);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Constructs a product plan of the specified plan and
+	 * this table.
+	 * @param current the specified plan
+	 * @return a product plan of the specified plan and this table
+	 */
+	public Plan makeProductPlan(Plan current) {
+		Plan p = addSelectPred(myplan);
+		return new MultibufferProductPlan(tx, current, p);
+	}
+	
+	private Plan makeProductJoin(Plan current, Schema currsch) {
+		Plan p = makeProductPlan(current);
+		return addJoinPred(p, currsch);
+	}
+	
+	
+	private Plan makeIndexJoin(Plan current, Schema currsch) {
+		for (String fldname : indexes.keySet()) {
+			String outerfield = mypred.equatesWithField(fldname);
+			if (outerfield != null && currsch.hasField(outerfield)) {
+				IndexInfo ii = indexes.get(fldname);
+				Plan p = new IndexJoinPlan(current, myplan, ii, outerfield);
+				p = addSelectPred(p);
+				return addJoinPred(p, currsch);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Lab 4 - Sort Merge Join based on Joined Fields
+	 * Constructs a merge plan of the specified plan and
+	 * this table.
+	 * @param current the specified plan
+	 * @param currsch the specified schema
+	 * @param joinpred the joined predicate
+	 * @return a merge plan of the specified plan and this table
+	 */
+	private Plan makeMergeJoin(Plan current, Schema currsch, Predicate joinpred) {
+		// Split the join predicate. 
+		String[] joinedFields = joinpred.toString().split("=");
+		Plan p = new MergeJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		p = addSelectPred(p);
+		return addJoinPred(p, currsch);
+	}
+	
+	/**
+	 * Lab 4 - Nested Loops Join based on Joined Fields
+	 * Constructs a Nested Loops plan of the specified plan and
+	 * this table.
+	 * @param current the specified plan
+	 * @param currsch the specified schema
+	 * @param joinpred the joined predicate
+	 * @return a Nested Block plan of the specified plan and this table
+	 */
+	private Plan makeNestedBlockJoin(Plan current, Schema currsch, Predicate joinpred) {
+		// Split the join predicate. 
+		String[] joinedFields = joinpred.toString().split("=");
+		Plan p = new NestedJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		p = addSelectPred(p);
+		return addJoinPred(p, currsch);
+	}
+
+	/**
+	 * Lab 5 - Hash Join based on Joined Fields
+	 * Constructs a merge plan of the specified plan and
+	 * this table.
+	 * @param current the specified plan
+	 * @param currsch the specified schema
+	 * @param joinpred the joined predicate
+	 * @return a hash join plan of the specified plan and this table
+	 */
+	private Plan makeHashJoin(Plan current, Schema currsch, Predicate joinpred) {
+		// Split the join predicate. 
+		String[] joinedFields = joinpred.toString().split("=");
+		System.out.println(joinedFields[0] + joinedFields[1]);
+		Plan p = new HashJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		p = addSelectPred(p);
+		return addJoinPred(p, currsch);
+	}
+	
+
 }

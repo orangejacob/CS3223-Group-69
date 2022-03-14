@@ -42,13 +42,15 @@ public class IndexInfo {
       this.si = si;
    }
    
+   public String getIndexType() {
+	   return this.mtdname;
+   }
+   
    /**
     * Open the index described by this object.
     * @return the Index object associated with this information
     */
    public Index open() {
-//    return new HashIndex(tx, idxname, idxLayout);
-//    return new BTreeIndex(tx, idxname, idxLayout);
       if (mtdname.equals("hash")) {
          return new HashIndex(tx, idxname, idxLayout);
       } else if (mtdname.equals("btree")) {
