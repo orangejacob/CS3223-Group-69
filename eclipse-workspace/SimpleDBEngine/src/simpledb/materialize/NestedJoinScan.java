@@ -22,10 +22,11 @@ public class NestedJoinScan implements Scan {
 
 	/**
 	 * Create a nested join scan for the two scans.
-	 * @param s1 the LHS sorted scan
-	 * @param s2 the RHS sorted scan
-	 * @param fldname1 the LHS join field
-	 * @param fldname2 the RHS join field
+	 * @param tx the transaction
+	 * @param inner the inner scan
+	 * @param outer the outer block using TempTable
+	 * @param fldname1 the inner scan join field name
+	 * @param fldname2 the outer scan join field name
 	 */
 	public NestedJoinScan(Transaction tx, Scan inner, String fldname1, TempTable tt, String fldname2) {
 		this.tx = tx;
@@ -50,9 +51,8 @@ public class NestedJoinScan implements Scan {
 	}
 
 	/**
-	 * Position the scan before the first record,
-	 * by positioning each underlying scan before
-	 * their first records.
+	 * Initialize the chunk scan positioned before
+	 * the first record for the first block.
 	 * @see simpledb.query.Scan#beforeFirst()
 	 */
 	public void beforeFirst() {
@@ -61,23 +61,27 @@ public class NestedJoinScan implements Scan {
 	}
 
 	/**
-	 * Lab 4 - Keep moving Inner Table (S2), returns true whenever there's a match with Outer (S1).
-	 * When S2 finishes -> Move forward S1 record, and continue.
+	 * Lab 4 - Nested Loops Join by Blocks.
+	 * Continuously moving the Inner Scan and returns true
+	 * whenever there is a match with the Outer Block scan.
+	 * When Inner scan reaches the end, move Outer Block Scan.
+	 * If Outer Scan reaches the end, load in the next Block.
+	 * If reaches end of the last Block, return false.
 	 */
 	public boolean next() {
 		boolean innerHasMore = inner.next();
 		while(innerHasMore) {
-			if(inner.getVal(fldname1).equals(outer.getVal(fldname2))){
+			// Inner Scan matches with Outer Scan.
+			if(inner.getVal(fldname1).equals(outer.getVal(fldname2)))
 				return true;
-			}
-			// End of Inner Scan
+			// Inner scan reaches the end.
 			if (!inner.next()) {
-				// Move to Outer Scan next.
-				if(outer.next()) {
+				// Moves Outer Scan + Move back Inner Scan.
+				if(outer.next()) 
 					inner.beforeFirst();
-				}else if(!useNextChunk()) {
+				// End of Outer Scan + No next block -> Return false.
+				else if(!useNextChunk()) 
 					return false;
-				}
 				innerHasMore = inner.next();
 			}
 		}
@@ -132,6 +136,12 @@ public class NestedJoinScan implements Scan {
 		return inner.hasField(fldname) || outer.hasField(fldname);
 	}
 
+	/**
+	 * Lab 4 - Nested Loops Join by Blocks.
+	 * Utilized the MultiBuffer logic, by using Chunk Size
+	 * to load in Block.
+	 */
+	
 	private boolean useNextChunk() {
 		if (nextblknum >= filesize)
 			return false;
