@@ -12,16 +12,18 @@ public class QueryData {
    private List<String> fields;
    private Collection<String> tables;
    private Predicate pred;
+   private boolean distinctQuery;
    private LinkedHashMap<String, Integer> sortFields;
    
    /**
     * Saves the field and table list and predicate.
     */
-   public QueryData(List<String> fields, Collection<String> tables, Predicate pred, LinkedHashMap<String,Integer> sortFields) {
+   public QueryData(List<String> fields, Collection<String> tables, Predicate pred, LinkedHashMap<String,Integer> sortFields, boolean distinctQuery) {
       this.fields = fields;
       this.tables = tables;
       this.pred = pred;
       this.sortFields = sortFields;
+      this.distinctQuery = distinctQuery; // Lab 6: Distinct Query
    }
    
    /**
@@ -46,6 +48,10 @@ public class QueryData {
     */
    public LinkedHashMap<String, Integer> sortFields() {
       return sortFields;
+   }
+   
+   public boolean isDistinctQuery() {
+	   return distinctQuery;
    }
    
    

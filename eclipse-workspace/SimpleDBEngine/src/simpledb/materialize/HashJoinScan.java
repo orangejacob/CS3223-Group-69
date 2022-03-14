@@ -130,7 +130,7 @@ public class HashJoinScan implements Scan {
 	}
 
 	/**
-	 * Return true if the specified field is in
+	 * Return true if the specified field is inouterPages
 	 * either of the underlying scans.
 	 * @see simpledb.query.Scan#hasField(java.lang.String)
 	 */
