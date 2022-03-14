@@ -65,9 +65,17 @@ class TablePlanner {
 	public Plan makeJoinPlan(Plan current) {
 
 		Schema currsch = current.schema();
+		String leftAlignFormat = "| %-20s | %-4d |%n";
 		Predicate joinpred = mypred.joinSubPred(myschema, currsch);
+		
 		if (joinpred == null)
 			return null;
+		
+
+		System.out.format("+----------------------+------+%n");
+		System.out.format("| Join Type            | Cost |%n");
+		System.out.format("+----------------------+------+%n");
+		String cheapestPlanName = "Product";
 		
 		// Default: Make Product Plan -> can't fail.
 		Plan cheapestPlan = makeProductJoin(current, currsch);  
@@ -82,32 +90,42 @@ class TablePlanner {
 		
 		// Find the cheapest plan out of the above, based on Block Accessed.
 		if (cheapestPlan != null)
-			System.out.println("Product Join Cost: " + cheapestPlan.blocksAccessed());
+			System.out.format(leftAlignFormat, "Product", cheapestPlan.blocksAccessed());
 		
 		if (mergePlan != null) {
-			System.out.println("Merge Sort Join Cost: " + mergePlan.blocksAccessed());
-			if (mergePlan.blocksAccessed() > cheapestPlan.blocksAccessed())
+			System.out.format(leftAlignFormat, "Sort Merge", mergePlan.blocksAccessed());
+			if (mergePlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
+				cheapestPlanName = "Sort Merge";
 				cheapestPlan = mergePlan;
+			}
 		}
 		
 		if (indexPlan != null) {
-			System.out.println("Index Based Join Cost: " + indexPlan.blocksAccessed());
-			if (indexPlan.blocksAccessed() > cheapestPlan.blocksAccessed())
+			System.out.format(leftAlignFormat, "Indexed", indexPlan.blocksAccessed());
+			if (indexPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
+				cheapestPlanName = "Indexed Plan";
 				cheapestPlan = indexPlan;
+			}
 		}
 		
 		if (nestedPlan != null) {
-			System.out.println("Nested Loops Join Cost: " + nestedPlan.blocksAccessed());
-			if (nestedPlan.blocksAccessed() > cheapestPlan.blocksAccessed())
+			System.out.format(leftAlignFormat, "Nested Loops", nestedPlan.blocksAccessed());
+			if (nestedPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
+				cheapestPlanName = "Nested Loops";
 				cheapestPlan = nestedPlan;
+			}
 		}
 		
 		if (hashPlan != null) {
-			System.out.println("Hash Join Cost: " + hashPlan.blocksAccessed());
-			if (hashPlan.blocksAccessed() > cheapestPlan.blocksAccessed())
+			System.out.format(leftAlignFormat, "Hashed", hashPlan.blocksAccessed());
+			if (hashPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
+				cheapestPlanName = "Hashed";
 				cheapestPlan = hashPlan;
+			}
 		}
-
+		System.out.format("+----------------------+------+%n");
+		System.out.format("| %-22s |%n", "Selected Join Type: " + cheapestPlanName);
+		System.out.format("+----------------------+------+%n");
 		return cheapestPlan;
 	}
 
@@ -186,8 +204,15 @@ class TablePlanner {
 	 */
 	private Plan makeMergeJoin(Plan current, Schema currsch, Predicate joinpred) {
 		// Split the join predicate. 
+		Plan p = null;
 		String[] joinedFields = joinpred.toString().split("=");
-		Plan p = new MergeJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		if(current.schema().hasField(joinedFields[0]) && myplan.schema().hasField(joinedFields[1])) {			
+			p = new MergeJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		}else if(current.schema().hasField(joinedFields[1]) && myplan.schema().hasField(joinedFields[0])) {
+			p = new MergeJoinPlan(tx, current, myplan, joinedFields[1], joinedFields[0]);
+		}else {
+			return null;
+		}
 		p = addSelectPred(p);
 		return addJoinPred(p, currsch);
 	}
@@ -203,8 +228,15 @@ class TablePlanner {
 	 */
 	private Plan makeNestedBlockJoin(Plan current, Schema currsch, Predicate joinpred) {
 		// Split the join predicate. 
+		Plan p = null;
 		String[] joinedFields = joinpred.toString().split("=");
-		Plan p = new NestedJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		if(current.schema().hasField(joinedFields[0]) && myplan.schema().hasField(joinedFields[1])) {			
+			p = new NestedJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		}else if(current.schema().hasField(joinedFields[1]) && myplan.schema().hasField(joinedFields[0])) {
+			p = new NestedJoinPlan(tx, current, myplan, joinedFields[1], joinedFields[0]);
+		}else {
+			return null;
+		}
 		p = addSelectPred(p);
 		return addJoinPred(p, currsch);
 	}
@@ -220,12 +252,20 @@ class TablePlanner {
 	 */
 	private Plan makeHashJoin(Plan current, Schema currsch, Predicate joinpred) {
 		// Split the join predicate. 
+		// Split the join predicate. 
+		Plan p = null;
 		String[] joinedFields = joinpred.toString().split("=");
-		System.out.println(joinedFields[0] + joinedFields[1]);
-		Plan p = new HashJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		if(current.schema().hasField(joinedFields[0]) && myplan.schema().hasField(joinedFields[1])) {			
+			p = new HashJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
+		}else if(current.schema().hasField(joinedFields[1]) && myplan.schema().hasField(joinedFields[0])) {
+			p = new HashJoinPlan(tx, current, myplan, joinedFields[1], joinedFields[0]);
+		}else {
+			return null;
+		}
 		p = addSelectPred(p);
 		return addJoinPred(p, currsch);
 	}
 	
-
+	
+	
 }
