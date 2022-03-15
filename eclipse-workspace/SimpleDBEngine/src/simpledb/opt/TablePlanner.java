@@ -20,7 +20,7 @@ class TablePlanner {
 	private Schema myschema;
 	private Map<String,IndexInfo> indexes;
 	private Transaction tx;
-
+	private double recorder;
 	/**
 	 * Creates a new table planner.
 	 * The specified predicate applies to the entire query.
@@ -36,7 +36,13 @@ class TablePlanner {
 		this.tx  = tx;
 		myplan   = new TablePlan(tx, tblname, mdm);
 		myschema = myplan.schema();
+		System.out.println(tblname);
 		indexes  = mdm.getIndexInfo(tblname, tx);
+		for(String f: indexes.keySet()) {
+			System.out.println("LMAO " + f);
+		}
+		recorder = Math.random();
+		System.out.println(recorder);
 	}
 
 	/**
@@ -67,6 +73,10 @@ class TablePlanner {
 		Schema currsch = current.schema();
 		String leftAlignFormat = "| %-20s | %-4d |%n";
 		Predicate joinpred = mypred.joinSubPred(myschema, currsch);
+		for(String f: indexes.keySet()) {
+			System.out.println("LMAO 2 " + f);
+		}
+		System.out.println(recorder);
 		
 		if (joinpred == null)
 			return null;
@@ -106,6 +116,8 @@ class TablePlanner {
 				cheapestPlanName = "Indexed Plan";
 				cheapestPlan = indexPlan;
 			}
+		}else {
+			System.out.println("Index not working.");
 		}
 		
 		if (nestedPlan != null) {
@@ -145,23 +157,6 @@ class TablePlanner {
 			return p;
 	}
 
-	private Plan makeIndexSelect() {
-		for (String fldname : indexes.keySet()) {
-			Constant val = mypred.equatesWithConstant(fldname);
-			if (val != null) {
-				IndexInfo ii = indexes.get(fldname);
-				// If indexType is hash, only execute for equality predicate.
-				if(ii.getIndexType().equals("hash")) {
-					String comparatorType = mypred.fieldComparatorType(fldname);
-					if(comparatorType != null && !comparatorType.equals("=")) 
-						return null;
-				}
-				System.out.println("index on " + fldname + " used");
-				return new IndexSelectPlan(myplan, ii, val);
-			}
-		}
-		return null;
-	}
 
 	/**
 	 * Constructs a product plan of the specified plan and
@@ -179,17 +174,39 @@ class TablePlanner {
 		return addJoinPred(p, currsch);
 	}
 	
+	private Plan makeIndexSelect() {
+		for (String fldname : indexes.keySet()) {
+			Constant val = mypred.equatesWithConstant(fldname);
+			if (val != null) {
+				IndexInfo ii = indexes.get(fldname);
+				// If indexType is hash, only execute for equality predicate.
+				if(ii.getIndexType().equals("hash")) {
+					String comparatorType = mypred.fieldComparatorType(fldname);
+					if(comparatorType != null && !comparatorType.equals("=")) 
+						return null;
+				}
+				System.out.println("index on " + fldname + " used");
+				return new IndexSelectPlan(myplan, ii, val);
+			}
+		}
+		return null;
+	}
 	
 	private Plan makeIndexJoin(Plan current, Schema currsch) {
+		System.out.println("HERE");
 		for (String fldname : indexes.keySet()) {
+			System.out.println(fldname);
 			String outerfield = mypred.equatesWithField(fldname);
 			if (outerfield != null && currsch.hasField(outerfield)) {
+				System.out.println("There's Index");
 				IndexInfo ii = indexes.get(fldname);
 				Plan p = new IndexJoinPlan(current, myplan, ii, outerfield);
 				p = addSelectPred(p);
 				return addJoinPred(p, currsch);
 			}
+			
 		}
+		System.out.println("There's no Index");
 		return null;
 	}
 

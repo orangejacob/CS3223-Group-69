@@ -40,7 +40,9 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 
 		// Step 3:  Repeatedly add a plan to the join order
 		while (!tableplanners.isEmpty()) {
+			System.out.println("im here");
 			Plan p = getLowestJoinPlan(currentplan);
+			System.out.println("Yo dad");
 			if (p != null)
 				currentplan = p;
 			else  // no applicable join
@@ -80,6 +82,7 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 		TablePlanner besttp = null;
 		Plan bestplan = null;
 		for (TablePlanner tp : tableplanners) {
+			System.out.println("Test 1");
 			Plan plan = tp.makeJoinPlan(current);
 			if (plan != null && (bestplan == null || plan.recordsOutput() < bestplan.recordsOutput())) {
 				besttp = tp;
