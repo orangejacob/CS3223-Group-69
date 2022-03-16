@@ -24,13 +24,13 @@ public class Lexer {
         // ADDED
         initAggs();
         tok = new StreamTokenizer(new StringReader(s));
-        tok.ordinaryChar('.'); // disallow "." in identifiers
-        tok.wordChars('_', '_'); // allow "_" in identifiers
-        tok.lowerCaseMode(true); // ids and keywords are converted
+        tok.ordinaryChar('.');   //disallow "." in identifiers
+        tok.wordChars('_', '_'); //allow "_" in identifiers
+        tok.lowerCaseMode(true); //ids and keywords are converted
         nextToken();
     }
 
-    // Methods to check the status of the current token
+    //Methods to check the status of the current token
 
     /**
      * Returns true if the current token is
