@@ -26,13 +26,20 @@ public class MergeJoinPlan implements Plan {
     * @param fldname2 the RHS join field
     * @param tx the calling transaction
     */
-   public MergeJoinPlan(Transaction tx, Plan p1, Plan p2, String fldname1, String fldname2) {
-      this.fldname1 = fldname1;
-      List<String> sortlist1 = Arrays.asList(fldname1);
-      this.p1 = new SortPlan(tx, p1, sortlist1);
+   public MergeJoinPlan(Transaction tx, Plan p1, Plan p2, String fldname1, String fldname2) {      
+	   this.fldname1 = fldname1;
+	   this.fldname2 = fldname2;
+	   
+      // Previously: List<String> sortlist1 = Arrays.asList(fldname1);
+	   // Previously: List<String> sortlist2 = Arrays.asList(fldname2);
+	   
+      LinkedHashMap<String, Integer> sortlist1 = new LinkedHashMap<>();
+      sortlist1.put(fldname1, -1);
       
-      this.fldname2 = fldname2;
-      List<String> sortlist2 = Arrays.asList(fldname2);
+      LinkedHashMap<String, Integer> sortlist2 = new LinkedHashMap<>();
+      sortlist2.put(fldname2, -1);
+      
+      this.p1 = new SortPlan(tx, p1, sortlist1);
       this.p2 = new SortPlan(tx, p2, sortlist2);
       
       sch.addAll(p1.schema());

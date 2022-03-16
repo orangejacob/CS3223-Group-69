@@ -102,8 +102,8 @@ public class HeuristicQueryPlanner implements QueryPlanner {
       return bestplan;
    }
 
-   public void setPlanner(Planner p) {
-      // for use in planning views, which
-      // for simplicity this code doesn't do.
-   }
+	public void setPlanner(Planner p) {
+		// for use in planning views, which
+		// for simplicity this code doesn't do.
+	}
 }

@@ -69,6 +69,10 @@ public class Term {
       }
    }
    
+   public String getOperator() {
+	   return this.operator;
+   }
+   
    /**
     * Calculate the extent to which selecting on the term reduces 
     * the number of records output by a query.
