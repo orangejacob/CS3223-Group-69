@@ -40,9 +40,7 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 
 		// Step 3:  Repeatedly add a plan to the join order
 		while (!tableplanners.isEmpty()) {
-			System.out.println("im here");
 			Plan p = getLowestJoinPlan(currentplan);
-			System.out.println("Yo dad");
 			if (p != null)
 				currentplan = p;
 			else  // no applicable join
@@ -52,10 +50,18 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 		// Step 4.  Project on the field names and return
 		currentplan = new ProjectPlan(currentplan, data.fields());
 		
+		/* Lab 6: Distinct Plan 
+		 * Execute Plan if only distinct
+		 * keyword is detected in query.
+		 * */
 		if(data.isDistinctQuery()) {
 			currentplan = new DistinctPlan(tx, currentplan, data.fields());
 		}
-		// Lab 03:
+		
+		/* Lab 3: Sort Plan 
+		 * Execute Plan if only order by
+		 * keyword is detected in query.
+		 * */
 		if(!data.sortFields().isEmpty()) {    	  
 			currentplan = new SortPlan(tx, currentplan, data.sortFields());
 		}
@@ -82,7 +88,6 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 		TablePlanner besttp = null;
 		Plan bestplan = null;
 		for (TablePlanner tp : tableplanners) {
-			System.out.println("Test 1");
 			Plan plan = tp.makeJoinPlan(current);
 			if (plan != null && (bestplan == null || plan.recordsOutput() < bestplan.recordsOutput())) {
 				besttp = tp;

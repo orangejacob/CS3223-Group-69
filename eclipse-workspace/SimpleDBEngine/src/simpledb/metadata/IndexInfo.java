@@ -82,7 +82,7 @@ public class IndexInfo {
       }
       return -1;
    }
-   
+    
    /**
     * Return the estimated number of records having a
     * search key.  This value is the same as doing a select

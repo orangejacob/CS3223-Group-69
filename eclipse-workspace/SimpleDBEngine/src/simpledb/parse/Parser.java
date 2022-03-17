@@ -61,6 +61,7 @@ public class Parser {
 
 		lex.eatKeyword("select");
 		
+		// Lab 6: Distinct Plan
 		if (lex.matchKeyword("distinct")) {
 			lex.eatKeyword("distinct");
 			distinctQuery = true;
@@ -74,7 +75,8 @@ public class Parser {
 			lex.eatKeyword("where");
 			pred = predicate();
 		}
-
+		
+		// Lab 3: Sort Plan
 		if (lex.matchKeyword("order")) {
 			lex.eatKeyword("order");
 			lex.eatKeyword("by");
@@ -83,6 +85,13 @@ public class Parser {
 		return new QueryData(fields, tables, pred, sortFields, distinctQuery);
 	}
 
+	/*
+	 * Lab 3: Sort Plan
+	 * Purpose: Recursively match & eat 
+	 * field names to be sorted on, as
+	 * well as the sorting type.
+	 * By default, sorting type is ascending (1).
+	 * */
 	private LinkedHashMap<String, Integer> selectSortList(){
 		LinkedHashMap<String, Integer> L = new LinkedHashMap<>();
 		String field = field();
@@ -93,7 +102,6 @@ public class Parser {
 		} else if (lex.matchKeyword("asc")) {
 			lex.eatKeyword("asc");
 		}
-
 		if (lex.matchDelim(',')) {
 			lex.eatDelim(',');
 			L.putAll(selectSortList());

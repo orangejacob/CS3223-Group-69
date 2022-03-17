@@ -47,8 +47,19 @@ public class BasicQueryPlanner implements QueryPlanner {
 		//Step 4: Project on the field names
 		p = new ProjectPlan(p, data.fields());
 
-		// Lab 03:
-		if(!data.sortFields().isEmpty()) {
+		/* Lab 6: Distinct Plan 
+		 * Execute Plan if only distinct
+		 * keyword is detected in query.
+		 * */
+		if(data.isDistinctQuery()) {
+			p = new DistinctPlan(tx, p, data.fields());
+		}
+		
+		/* Lab 3: Sort Plan 
+		 * Execute Plan if only order by
+		 * keyword is detected in query.
+		 * */
+		if(!data.sortFields().isEmpty()) {    	  
 			p = new SortPlan(tx, p, data.sortFields());
 		}
 

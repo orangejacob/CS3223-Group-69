@@ -29,7 +29,12 @@ public class SortPlan implements Plan {
 		comp = new RecordComparator(fields);
 	}
 
-	// Lab 3: Overload
+	/* Lab 3: Order By 
+	 * Overload constructor to take in 
+	 * LinkedHashMap attribute instead of List attribute.
+	 * Purpose: Handle ascending, descending, as well as
+	 * order of sorting.
+	 * */
 	public SortPlan(Transaction tx, Plan p, LinkedHashMap<String, Integer> sortFields) {
 		this.tx = tx;
 		this.p = p;
@@ -47,7 +52,7 @@ public class SortPlan implements Plan {
 		Scan src = p.open();
 		List<TempTable> runs = splitIntoRuns(src);
 		src.close();
-		// Change to 1 sorted run.
+		// Lab 4: Change to 1 sorted run.
 		while (runs.size() > 1)
 			runs = doAMergeIteration(runs);
 		return new SortScan(runs, comp);
