@@ -3,9 +3,11 @@ package simpledb.parse;
 import java.util.*;
 
 import simpledb.query.*;
+import simpledb.materialize.AggregationFn;
 
 /**
  * Data for the SQL <i>select</i> statement.
+ * 
  * @author Edward Sciore
  */
 public class QueryData {
@@ -14,16 +16,22 @@ public class QueryData {
    private Predicate pred;
    private boolean distinctQuery;
    private LinkedHashMap<String, Integer> sortFields;
+   // ADDED
+   private List<AggregationFn> aggs;
+   private List<String> groupfields;
    
    /**
     * Saves the field and table list and predicate.
     */
-   public QueryData(List<String> fields, Collection<String> tables, Predicate pred, LinkedHashMap<String,Integer> sortFields, boolean distinctQuery) {
+   public QueryData(List<String> fields, Collection<String> tables, Predicate pred, LinkedHashMap<String,Integer> sortFields, boolean distinctQuery, 
+    List<AggregationFn> aggs, List<String> groupfields) {
       this.fields = fields;
       this.tables = tables;
       this.pred = pred;
       this.sortFields = sortFields;
       this.distinctQuery = distinctQuery; // Lab 6: Distinct Query
+      this.aggs = aggs;
+      this.groupfields = groupfields;
    }
    
    /**
@@ -41,6 +49,26 @@ public class QueryData {
    public Collection<String> tables() {
       return tables;
    }
+
+   // ADDED
+    /**
+     * Returns the aggregation functions mentioned in the select clause.
+     * 
+     * @return a list of aggregation functions
+     */
+    public List<AggregationFn> aggs() {
+        return aggs;
+    }
+
+    // ADDED
+    /**
+     * Returns the group fields in the group by clause.
+     * 
+     * @return a list of group fields
+     */
+    public List<String> groupfields() {
+        return groupfields;
+    }
    
    /**
     * Returns the tables mentioned in the from clause.
