@@ -9,9 +9,9 @@ import simpledb.query.*;
  * @author Edward Sciore
  */
 public class AvgFn implements AggregationFn {
-    private String fldname;
     private int sum;
     private int count;
+    private String fldname;
 
     /**
      * Create a avg aggregation function for the specified field.

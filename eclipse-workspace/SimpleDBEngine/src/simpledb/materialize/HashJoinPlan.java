@@ -22,7 +22,6 @@ public class HashJoinPlan implements Plan {
 	 * @param fldname1 the LHS join field
 	 * @param fldname2 the RHS join field
 	 */
-
 	public HashJoinPlan(Transaction tx, Plan p1, Plan p2, String fldname1, String fldname2) {      
 		this.p1 = p1;
 		this.p2 = p2;

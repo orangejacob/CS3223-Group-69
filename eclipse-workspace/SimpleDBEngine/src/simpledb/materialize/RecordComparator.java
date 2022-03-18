@@ -22,7 +22,12 @@ public class RecordComparator implements Comparator<Scan> {
 		this.fields = fields;
 	}
 
-	// Lab 3 overload:
+	/* 
+	 * Lab 3: Order By
+	 * Overload constructor to take in LinkedHashMap
+	 * attribute which keep tracks of the order to 
+	 * sort and either ascending or descending.
+	 */
 	public RecordComparator(LinkedHashMap<String, Integer> sortFields) {
 		this.sortFields = sortFields;
 	}
@@ -40,6 +45,7 @@ public class RecordComparator implements Comparator<Scan> {
 	 * @return the result of comparing each scan's current record according to the field list
 	 */
 	public int compare(Scan s1, Scan s2) {
+		// Lab 6
 		if (fields != null) {
 			for (String fldname : fields) {
 				Constant val1 = s1.getVal(fldname);
@@ -50,8 +56,9 @@ public class RecordComparator implements Comparator<Scan> {
 			}
 			return 0;
 		}
+		// Lab 3: Order By
 		for(Map.Entry<String, Integer> entry: sortFields.entrySet()) {
-			// Value 1 = Asc, -1 = Dsc
+			// Value 1 = Ascending, -1 = Descending
 			Constant val1 = s1.getVal(entry.getKey());
 			Constant val2 = s2.getVal(entry.getKey());
 			int result = val1.compareTo(val2);

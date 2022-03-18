@@ -214,7 +214,7 @@ public class DistinctPlan implements Plan {
 					}
 				}
 				if(!nexted) {
-					stashRecordValue(src1);
+					stashRecordValue(src2);
 					hasmore2 = copy(src2, dest);
 				}
 			}

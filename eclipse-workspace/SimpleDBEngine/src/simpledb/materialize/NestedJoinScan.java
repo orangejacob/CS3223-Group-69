@@ -69,7 +69,21 @@ public class NestedJoinScan implements Scan {
 	 * If reaches end of the last Block, return false.
 	 */
 	public boolean next() {
+
 		boolean innerHasMore = inner.next();
+		
+		// It was at the last record.
+		if(!innerHasMore) {
+			// Check if Outer block still has next record.
+			if(outer.next()) {
+				inner.beforeFirst();
+				innerHasMore = inner.next();
+			}
+			// Else, check if there's next chunk.
+			else if(useNextChunk())			
+				innerHasMore = inner.next();
+		}
+
 		while(innerHasMore) {
 			// Inner Scan matches with Outer Scan.
 			if(inner.getVal(fldname1).equals(outer.getVal(fldname2)))
@@ -85,6 +99,7 @@ public class NestedJoinScan implements Scan {
 				innerHasMore = inner.next();
 			}
 		}
+		// No next Outer record, chunk and inner is at the end.
 		return false;
 	}
 
@@ -96,7 +111,7 @@ public class NestedJoinScan implements Scan {
 	 */
 	public int getInt(String fldname) {
 		if (inner.hasField(fldname))
-			return outer.getInt(fldname);
+			return inner.getInt(fldname);
 		else
 			return outer.getInt(fldname);
 	}
@@ -141,7 +156,7 @@ public class NestedJoinScan implements Scan {
 	 * Utilized the MultiBuffer logic, by using Chunk Size
 	 * to load in Block.
 	 */
-	
+
 	private boolean useNextChunk() {
 		if (nextblknum >= filesize)
 			return false;

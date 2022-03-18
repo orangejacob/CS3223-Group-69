@@ -9,8 +9,8 @@ import simpledb.query.*;
  * @author Edward Sciore
  */
 public class MinFn implements AggregationFn {
+	private Constant min;
     private String fldname;
-    private Constant min;
 
     /**
      * Create a min aggregation function for the specified field.

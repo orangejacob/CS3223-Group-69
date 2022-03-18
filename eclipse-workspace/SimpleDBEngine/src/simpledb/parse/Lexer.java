@@ -21,7 +21,7 @@ public class Lexer {
      */
     public Lexer(String s) {
         initKeywords();
-        // ADDED
+        // Lab 5
         initAggs();
         tok = new StreamTokenizer(new StringReader(s));
         tok.ordinaryChar('.');   //disallow "." in identifiers
@@ -80,7 +80,7 @@ public class Lexer {
         return tok.ttype == StreamTokenizer.TT_WORD && !keywords.contains(tok.sval);
     }
 
-    // ADDED
+    // Lab 5: Aggregation.
     /**
      * Returns true if the current token is an aggregate function.
      * 
@@ -203,7 +203,7 @@ public class Lexer {
         return s;
     }
 
-    // ADDED
+    // Lab 5: Aggregation.
     /**
      * Throws an exception if the current token is not an aggregate function.
      * Otherwise, returns the aggregate function 
@@ -238,15 +238,16 @@ public class Lexer {
         }
     }
 
-    // CHANGED
+    // All Labs 
     private void initKeywords() {
         keywords = Arrays.asList("select", "from", "where", "and",
                 "insert", "into", "values", "delete", "update", "set",
-                "create", "table", "int", "varchar", "view", "as", "index", "on", "using", "btree", "hash",
-                "group", "by");
+                "create", "table", "int", "varchar", "view", "as", "index", "on", 
+                "using", "btree", "hash", "group", "by", "order", "by", "asc", "desc", 
+                "distinct");
     }
 
-    // ADDED
+    // Lab 5 Aggregation Functions.
     private void initAggs() {
         aggs = Arrays.asList("sum", "count", "avg", "min", "max");
     }

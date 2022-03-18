@@ -20,7 +20,6 @@ class TablePlanner {
 	private Schema myschema;
 	private Map<String,IndexInfo> indexes;
 	private Transaction tx;
-
 	/**
 	 * Creates a new table planner.
 	 * The specified predicate applies to the entire query.
@@ -67,16 +66,15 @@ class TablePlanner {
 		Schema currsch = current.schema();
 		String leftAlignFormat = "| %-20s | %-4d |%n";
 		Predicate joinpred = mypred.joinSubPred(myschema, currsch);
-		
+
 		if (joinpred == null)
 			return null;
-		
 
 		System.out.format("+----------------------+------+%n");
 		System.out.format("| Join Type            | Cost |%n");
 		System.out.format("+----------------------+------+%n");
 		String cheapestPlanName = "Product";
-		
+
 		// Default: Make Product Plan -> can't fail.
 		Plan cheapestPlan = makeProductJoin(current, currsch);  
 		// Lab 4: Merge Join.
@@ -87,11 +85,11 @@ class TablePlanner {
 		Plan nestedPlan   = makeNestedBlockJoin(current, currsch, joinpred);
 		// Lab 5: Hash Partition Join
 		Plan hashPlan     = makeHashJoin(current, currsch, joinpred);
-		
+
 		// Find the cheapest plan out of the above, based on Block Accessed.
 		if (cheapestPlan != null)
 			System.out.format(leftAlignFormat, "Product", cheapestPlan.blocksAccessed());
-		
+
 		if (mergePlan != null) {
 			System.out.format(leftAlignFormat, "Sort Merge", mergePlan.blocksAccessed());
 			if (mergePlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
@@ -99,15 +97,17 @@ class TablePlanner {
 				cheapestPlan = mergePlan;
 			}
 		}
-		
+
 		if (indexPlan != null) {
 			System.out.format(leftAlignFormat, "Indexed", indexPlan.blocksAccessed());
 			if (indexPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
 				cheapestPlanName = "Indexed Plan";
 				cheapestPlan = indexPlan;
 			}
+		}else {
+			System.out.format(leftAlignFormat, "Indexed", -1);
 		}
-		
+
 		if (nestedPlan != null) {
 			System.out.format(leftAlignFormat, "Nested Loops", nestedPlan.blocksAccessed());
 			if (nestedPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
@@ -115,7 +115,7 @@ class TablePlanner {
 				cheapestPlan = nestedPlan;
 			}
 		}
-		
+
 		if (hashPlan != null) {
 			System.out.format(leftAlignFormat, "Hashed", hashPlan.blocksAccessed());
 			if (hashPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
@@ -124,9 +124,40 @@ class TablePlanner {
 			}
 		}
 		System.out.format("+----------------------+------+%n");
-		System.out.format("| %-22s |%n", "Selected Join Type: " + cheapestPlanName);
-		System.out.format("+----------------------+------+%n");
+		System.out.format("----------------------------------------%n");
+		System.out.format(" %-22s %n", "Selected Join Type: " + cheapestPlanName);
+		System.out.format("----------------------------------------%n");
 		return cheapestPlan;
+
+	}
+
+	// For Experiment 2
+	public Plan makeJoinPlanManual(Plan current, String joinName) {
+
+		Schema currsch = current.schema();
+		Predicate joinpred = mypred.joinSubPred(myschema, currsch);
+
+		if (joinpred == null)
+			return null;
+
+		switch (joinName) {
+		case "index":
+			System.out.println("Used Index Join");
+			return makeIndexJoin(current, currsch);
+		case "merge":
+			System.out.println("Used Sort Merge Join");
+			return makeMergeJoin(current, currsch, joinpred);
+		case "hash":
+			System.out.println("Used Hash Join");
+			return makeHashJoin(current, currsch, joinpred);
+		case "nested":
+			System.out.println("Used Nested Loops Join");
+			return makeNestedBlockJoin(current, currsch, joinpred);
+		default:
+			System.out.println("Used Product Join");
+			return	makeProductJoin(current, currsch);  
+		}
+
 	}
 
 	private Plan addSelectPred(Plan p) {
@@ -145,23 +176,6 @@ class TablePlanner {
 			return p;
 	}
 
-	private Plan makeIndexSelect() {
-		for (String fldname : indexes.keySet()) {
-			Constant val = mypred.equatesWithConstant(fldname);
-			if (val != null) {
-				IndexInfo ii = indexes.get(fldname);
-				// If indexType is hash, only execute for equality predicate.
-				if(ii.getIndexType().equals("hash")) {
-					String comparatorType = mypred.fieldComparatorType(fldname);
-					if(comparatorType != null && !comparatorType.equals("=")) 
-						return null;
-				}
-				System.out.println("index on " + fldname + " used");
-				return new IndexSelectPlan(myplan, ii, val);
-			}
-		}
-		return null;
-	}
 
 	/**
 	 * Constructs a product plan of the specified plan and
@@ -173,13 +187,30 @@ class TablePlanner {
 		Plan p = addSelectPred(myplan);
 		return new MultibufferProductPlan(tx, current, p);
 	}
-	
+
 	private Plan makeProductJoin(Plan current, Schema currsch) {
 		Plan p = makeProductPlan(current);
 		return addJoinPred(p, currsch);
 	}
-	
-	
+
+	private Plan makeIndexSelect() {
+		for (String fldname : indexes.keySet()) {
+			Constant val = mypred.equatesWithConstant(fldname);
+			if (val != null) {
+				IndexInfo ii = indexes.get(fldname);
+				// If indexType is hash, only execute for equality predicate.
+				if(ii.getIndexType().equals("hash")) {
+					String comparatorType = mypred.fieldComparatorType(fldname);
+					if(comparatorType != null && !comparatorType.equals("=")) 
+						return null;
+				}
+				System.out.println(ii.getIndexType() + " index on " + fldname + " used");
+				return new IndexSelectPlan(myplan, ii, val);
+			}
+		}
+		return null;
+	}
+
 	private Plan makeIndexJoin(Plan current, Schema currsch) {
 		for (String fldname : indexes.keySet()) {
 			String outerfield = mypred.equatesWithField(fldname);
@@ -216,7 +247,7 @@ class TablePlanner {
 		p = addSelectPred(p);
 		return addJoinPred(p, currsch);
 	}
-	
+
 	/**
 	 * Lab 4 - Nested Loops Join based on Joined Fields
 	 * Constructs a Nested Loops plan of the specified plan and
@@ -252,7 +283,6 @@ class TablePlanner {
 	 */
 	private Plan makeHashJoin(Plan current, Schema currsch, Predicate joinpred) {
 		// Split the join predicate. 
-		// Split the join predicate. 
 		Plan p = null;
 		String[] joinedFields = joinpred.toString().split("=");
 		if(current.schema().hasField(joinedFields[0]) && myplan.schema().hasField(joinedFields[1])) {			
@@ -265,7 +295,4 @@ class TablePlanner {
 		p = addSelectPred(p);
 		return addJoinPred(p, currsch);
 	}
-	
-	
-	
 }

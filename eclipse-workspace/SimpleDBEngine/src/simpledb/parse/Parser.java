@@ -54,51 +54,46 @@ public class Parser {
 		return pred;
 	}
 
-    // ADDED
-    public String agg() {
-        return lex.eatAgg();
-    }
+	// Lab 5: Aggregation Field.
+	public String agg() {
+		return lex.eatAgg();
+	}
 
 	// Methods for parsing queries
-
 	public QueryData query() {
-		
+
 		boolean distinctQuery = false;
 		LinkedHashMap<String, Integer> sortFields = new LinkedHashMap<>();
 
 		lex.eatKeyword("select");
-		
+
 		if (lex.matchKeyword("distinct")) {
 			lex.eatKeyword("distinct");
 			distinctQuery = true;
 		}
 
-         // Changed
-        List<String> fields = new ArrayList<>();
+		// Lab 5: New Fields Array.
+		List<String> fields = new ArrayList<>();
 
-        // ADDED
-        List<AggregationFn> aggs = new ArrayList<>();
-        while (true) {
-            String field;
-            if (lex.matchAgg()) {
-                String agg = agg();
-                lex.eatDelim('(');
-                field = field();
-                lex.eatDelim(')');
-                aggs.add(getAggType(agg, field));
-            } else {
-                field = field();
-            }
-            fields.add(field);
+		// Lab 5: Aggregation function.
+		List<AggregationFn> aggs = new ArrayList<>();
+		while (true) {
+			String field;
+			if (lex.matchAgg()) {
+				String agg = agg();
+				lex.eatDelim('(');
+				field = field();
+				lex.eatDelim(')');
+				aggs.add(getAggType(agg, field));
+			} else 
+				field = field();
+			fields.add(field);
+			if (!lex.matchDelim(','))
+				break;
+			else 
+				lex.eatDelim(',');
+		}
 
-            if (!lex.matchDelim(',')) {
-                break;
-            } else {
-                lex.eatDelim(',');
-            }
-        }
-
-		List<String> fields = selectList();
 		lex.eatKeyword("from");
 		Collection<String> tables = tableList();
 		Predicate pred = new Predicate();
@@ -108,13 +103,13 @@ public class Parser {
 			pred = predicate();
 		}
 
-        // ADDED
-        List<String> groupfields = new ArrayList<>();
-        if (lex.matchKeyword("group")) {
-            lex.eatKeyword("group");
-            lex.eatKeyword("by");
-            groupfields = groupfieldList();
-        }
+		// Lab 5: Aggregation and Group by.
+		List<String> groupfields = new ArrayList<>();
+		if (lex.matchKeyword("group")) {
+			lex.eatKeyword("group");
+			lex.eatKeyword("by");
+			groupfields = groupfieldList();
+		}
 
 		if (lex.matchKeyword("order")) {
 			lex.eatKeyword("order");
@@ -124,39 +119,46 @@ public class Parser {
 		return new QueryData(fields, tables, pred, sortFields, distinctQuery, aggs, groupfields);
 	}
 
-    // ADDED
-    private AggregationFn getAggType(String agg, String field) {
-        switch (agg.toLowerCase()) {
-            case "sum" -> {
-                return new SumFn(field);
-            }
-            case "count" -> {
-                return new CountFn(field);
-            }
-            case "avg" -> {
-                return new AvgFn(field);
-            }
-            case "min" -> {
-                return new MinFn(field);
-            }
-            case "max" -> {
-                return new MaxFn(field);
-            }
-        }
-        return null;
-    }
+	// Lab 5: Aggregation Field.
+	private AggregationFn getAggType(String agg, String field) {
+		switch (agg.toLowerCase()) {
+		case "sum" -> {
+			return new SumFn(field);
+		}
+		case "count" -> {
+			return new CountFn(field);
+		}
+		case "avg" -> {
+			return new AvgFn(field);
+		}
+		case "min" -> {
+			return new MinFn(field);
+		}
+		case "max" -> {
+			return new MaxFn(field);
+		}
+		}
+		return null;
+	}
 
-    // ADDED
-    private List<String> groupfieldList() {
-        List<String> groupfields = new ArrayList<>();
-        groupfields.add(field());
-        if (lex.matchDelim(',')) {
-            lex.eatDelim(',');
-            groupfields.addAll(groupfieldList());
-        }
-        return groupfields;
-    }
+	// Lab 5: Group by Field.
+	private List<String> groupfieldList() {
+		List<String> groupfields = new ArrayList<>();
+		groupfields.add(field());
+		if (lex.matchDelim(',')) {
+			lex.eatDelim(',');
+			groupfields.addAll(groupfieldList());
+		}
+		return groupfields;
+	}
 
+	/*
+	 * Lab 3: Sort Plan
+	 * Purpose: Recursively match & eat 
+	 * field names to be sorted on, as
+	 * well as the sorting type.
+	 * By default, sorting type is ascending (1).
+	 * */
 	private LinkedHashMap<String, Integer> selectSortList(){
 		LinkedHashMap<String, Integer> L = new LinkedHashMap<>();
 		String field = field();
@@ -361,9 +363,9 @@ public class Parser {
 		}
 		return new CreateIndexData(idxname, tblname, fldname, mtdname);
 	}
-}
 
-    // Methods for parsing the various update commands
+
+	/* Methods for parsing the various update commands
 
     public Object updateCmd() {
         if (lex.matchKeyword("insert"))
@@ -526,5 +528,6 @@ public class Parser {
             mtdname = "hash";
         }
         return new CreateIndexData(idxname, tblname, fldname, mtdname);
-    }
+    }*/
+
 }
