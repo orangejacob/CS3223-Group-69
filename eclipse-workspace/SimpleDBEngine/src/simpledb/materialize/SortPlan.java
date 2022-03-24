@@ -15,6 +15,8 @@ public class SortPlan implements Plan {
 	private Plan p;
 	private Schema sch;
 	private RecordComparator comp;
+	private List<String> fields;
+	private LinkedHashMap<String, Integer> sortFields;
 
 	/**
 	 * Create a sort plan for the specified query.
@@ -26,6 +28,7 @@ public class SortPlan implements Plan {
 		this.tx = tx;
 		this.p = p;
 		sch = p.schema();
+		this.fields = fields;
 		comp = new RecordComparator(fields);
 	}
 
@@ -39,6 +42,7 @@ public class SortPlan implements Plan {
 		this.tx = tx;
 		this.p = p;
 		sch = p.schema();
+		this.sortFields = sortFields;
 		comp = new RecordComparator(sortFields);
 	}
 
@@ -163,5 +167,13 @@ public class SortPlan implements Plan {
 		for (String fldname : sch.fields())
 			dest.setVal(fldname, src.getVal(fldname));
 		return src.next();
+	}
+
+	// Lab 6: Query Plan
+	public String toString() {
+		if(sortFields == null) {
+			return String.format("(%s) sort by %s", p.toString(), fields.toString());
+		}
+		return String.format("(%s) sort by %s", p.toString(), sortFields.toString());
 	}
 }

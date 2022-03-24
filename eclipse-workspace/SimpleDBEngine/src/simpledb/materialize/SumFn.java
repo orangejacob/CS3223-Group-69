@@ -56,4 +56,9 @@ public class SumFn implements AggregationFn {
 	public Constant value() {
 		return new Constant(sum);
 	}
+	
+	// Lab 6: Query Plan
+	public String toString(){ 
+		return "Sum (" +  fldname + ")";
+	}  
 }

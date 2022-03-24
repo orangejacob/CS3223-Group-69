@@ -84,7 +84,9 @@ public class HashJoinPlan implements Plan {
 	public Schema schema() {
 		return sch;
 	}
-
-	
+	// Lab 6: query plan
+    public String toString(){
+        return String.format("[(%s) hash join (%s)](%s = %s)", p1.toString(), p2.toString(), fldname1, fldname2);
+    }
 }
 

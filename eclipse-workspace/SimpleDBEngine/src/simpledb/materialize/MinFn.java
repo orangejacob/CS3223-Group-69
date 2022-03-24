@@ -65,4 +65,9 @@ public class MinFn implements AggregationFn {
     public Constant value() {
         return min;
     }
+    
+	// Lab 6: Query Plan
+	public String toString(){ 
+		return "Min (" +  fldname + ")";
+	}
 }

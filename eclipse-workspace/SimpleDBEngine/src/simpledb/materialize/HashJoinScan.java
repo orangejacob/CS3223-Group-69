@@ -48,6 +48,7 @@ public class HashJoinScan implements Scan {
 	 * @see simpledb.query.Scan#beforeFirst()
 	 */
 	public void beforeFirst() {
+		curPartition = 0;
 		useNextPartition();
 	}
 

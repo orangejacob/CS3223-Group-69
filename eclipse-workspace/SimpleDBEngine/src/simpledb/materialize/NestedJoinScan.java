@@ -14,9 +14,9 @@ public class NestedJoinScan implements Scan {
 	private ChunkScan outer;
 
 	private Layout layout;
+	private Predicate pred;
 	private Transaction tx;
 	private String filename;
-
 	private String fldname1, fldname2;
 	private int chunksize, nextblknum, filesize;
 
@@ -28,8 +28,9 @@ public class NestedJoinScan implements Scan {
 	 * @param fldname1 the inner scan join field name
 	 * @param fldname2 the outer scan join field name
 	 */
-	public NestedJoinScan(Transaction tx, Scan inner, String fldname1, TempTable tt, String fldname2) {
+	public NestedJoinScan(Transaction tx, Scan inner, String fldname1, TempTable tt, String fldname2, Predicate pred) {
 		this.tx = tx;
+		this.pred = pred;
 		this.inner = inner;
 		this.fldname1 = fldname1;
 		this.fldname2 = fldname2;
@@ -86,7 +87,7 @@ public class NestedJoinScan implements Scan {
 
 		while(innerHasMore) {
 			// Inner Scan matches with Outer Scan.
-			if(inner.getVal(fldname1).equals(outer.getVal(fldname2)))
+			if(pred.isSatisfied(this))
 				return true;
 			// Inner scan reaches the end.
 			if (!inner.next()) {

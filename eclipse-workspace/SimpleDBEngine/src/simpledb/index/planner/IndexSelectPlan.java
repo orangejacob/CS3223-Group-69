@@ -15,7 +15,7 @@ public class IndexSelectPlan implements Plan {
    private Plan p;
    private IndexInfo ii;
    private Constant val;
-   
+   private String tblname;
    /**
     * Creates a new indexselect node in the query tree
     * for the specified index and selection constant.
@@ -24,10 +24,11 @@ public class IndexSelectPlan implements Plan {
     * @param val the selection constant
     * @param tx the calling transaction 
     */
-   public IndexSelectPlan(Plan p, IndexInfo ii, Constant val) {
+   public IndexSelectPlan(Plan p, IndexInfo ii, Constant val, String tblname) {
       this.p = p;
       this.ii = ii;
       this.val = val;
+      this.tblname = tblname;
    }
    
    /** 
@@ -76,4 +77,10 @@ public class IndexSelectPlan implements Plan {
    public Schema schema() {
       return p.schema(); 
    }
+   
+   // Lab 6: Query Plan
+   public String toString() { 
+	   return "Index Scan " + tblname + " using " + ii.getIndexType() + " on " + ii.getFieldName();
+	   }
+
 }

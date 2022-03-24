@@ -274,4 +274,9 @@ public class DistinctPlan implements Plan {
 			hashMap.put(val, true);
 		}
 	}
+	
+	// Lab 6: Query Plan
+	public String toString() {
+        return "Distinct (" + p.toString() + ")";
+    }
 }

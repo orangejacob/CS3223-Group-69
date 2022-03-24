@@ -1,5 +1,8 @@
 package simpledb.opt;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import simpledb.tx.Transaction;
 import simpledb.record.*;
@@ -18,6 +21,7 @@ class TablePlanner {
 	private TablePlan myplan;
 	private Predicate mypred;
 	private Schema myschema;
+	private String tblname;
 	private Map<String,IndexInfo> indexes;
 	private Transaction tx;
 	/**
@@ -33,6 +37,7 @@ class TablePlanner {
 	public TablePlanner(String tblname, Predicate mypred, Transaction tx, MetadataMgr mdm) {
 		this.mypred  = mypred;
 		this.tx  = tx;
+		this.tblname = tblname;
 		myplan   = new TablePlan(tx, tblname, mdm);
 		myschema = myplan.schema();
 		indexes  = mdm.getIndexInfo(tblname, tx);
@@ -65,64 +70,51 @@ class TablePlanner {
 
 		Schema currsch = current.schema();
 		String leftAlignFormat = "| %-20s | %-4d |%n";
+		String comparatorType = null, cheapestPlanName = null; ;
 		Predicate joinpred = mypred.joinSubPred(myschema, currsch);
 
 		if (joinpred == null)
 			return null;
 
+		LinkedHashMap<String, Plan> joins = new LinkedHashMap<>();
+		joins.put("Product", makeProductJoin(current, currsch));
+		joins.put("Nested", makeNestedBlockJoin(current, currsch, joinpred));
+
+		for(String fldname: currsch.fields()) {
+			String comparator = joinpred.fieldComparatorType(fldname);
+			if(comparator != null) {
+				comparatorType = comparator;
+				break;
+			}
+		}
+		
+		if(comparatorType.equals("=")) {
+			joins.put("Index",  makeIndexJoin(current, currsch));
+			joins.put("Hash", makeHashJoin(current, currsch, joinpred));
+			joins.put("Sort Merge", makeMergeJoin(current, currsch, joinpred));
+		}
+
 		System.out.format("+----------------------+------+%n");
 		System.out.format("| Join Type            | Cost |%n");
 		System.out.format("+----------------------+------+%n");
-		String cheapestPlanName = "Product";
-
-		// Default: Make Product Plan -> can't fail.
-		Plan cheapestPlan = makeProductJoin(current, currsch);  
-		// Lab 4: Merge Join.
-		Plan mergePlan    = makeMergeJoin(current, currsch, joinpred);
-		// Lab 4: Index Based Join.
-		Plan indexPlan    = makeIndexJoin(current, currsch);
-		// Lab 4: Nested Loop Join
-		Plan nestedPlan   = makeNestedBlockJoin(current, currsch, joinpred);
-		// Lab 5: Hash Partition Join
-		Plan hashPlan     = makeHashJoin(current, currsch, joinpred);
-
-		// Find the cheapest plan out of the above, based on Block Accessed.
-		if (cheapestPlan != null)
-			System.out.format(leftAlignFormat, "Product", cheapestPlan.blocksAccessed());
-
-		if (mergePlan != null) {
-			System.out.format(leftAlignFormat, "Sort Merge", mergePlan.blocksAccessed());
-			if (mergePlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
-				cheapestPlanName = "Sort Merge";
-				cheapestPlan = mergePlan;
+		
+		Plan curPlan = null;
+		Plan cheapestPlan = null;
+		
+		// Iterating HashMap through for loop
+        for (Map.Entry<String, Plan> set : joins.entrySet()) {
+        	curPlan = set.getValue();
+        	if(curPlan == null) {
+        		continue;
+        	}
+        	System.out.format(leftAlignFormat, set.getKey(), curPlan.blocksAccessed());
+			if (cheapestPlan == null || curPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
+				cheapestPlanName = set.getKey();
+				cheapestPlan = curPlan;
 			}
-		}
+        }
+       
 
-		if (indexPlan != null) {
-			System.out.format(leftAlignFormat, "Indexed", indexPlan.blocksAccessed());
-			if (indexPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
-				cheapestPlanName = "Indexed Plan";
-				cheapestPlan = indexPlan;
-			}
-		}else {
-			System.out.format(leftAlignFormat, "Indexed", -1);
-		}
-
-		if (nestedPlan != null) {
-			System.out.format(leftAlignFormat, "Nested Loops", nestedPlan.blocksAccessed());
-			if (nestedPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
-				cheapestPlanName = "Nested Loops";
-				cheapestPlan = nestedPlan;
-			}
-		}
-
-		if (hashPlan != null) {
-			System.out.format(leftAlignFormat, "Hashed", hashPlan.blocksAccessed());
-			if (hashPlan.blocksAccessed() < cheapestPlan.blocksAccessed()) {
-				cheapestPlanName = "Hashed";
-				cheapestPlan = hashPlan;
-			}
-		}
 		System.out.format("+----------------------+------+%n");
 		System.out.format("----------------------------------------%n");
 		System.out.format(" %-22s %n", "Selected Join Type: " + cheapestPlanName);
@@ -199,13 +191,14 @@ class TablePlanner {
 			if (val != null) {
 				IndexInfo ii = indexes.get(fldname);
 				// If indexType is hash, only execute for equality predicate.
-				if(ii.getIndexType().equals("hash")) {
-					String comparatorType = mypred.fieldComparatorType(fldname);
+				if(ii.getIndexType().equals("hash") || ii.getIndexType().equals("btree")) {
+					String comparatorType = mypred.fieldComparatorTypeByConstant(fldname);
 					if(comparatorType != null && !comparatorType.equals("=")) 
 						return null;
+					System.out.println(comparatorType);
 				}
 				System.out.println(ii.getIndexType() + " index on " + fldname + " used");
-				return new IndexSelectPlan(myplan, ii, val);
+				return new IndexSelectPlan(myplan, ii, val, tblname);
 			}
 		}
 		return null;
@@ -259,15 +252,7 @@ class TablePlanner {
 	 */
 	private Plan makeNestedBlockJoin(Plan current, Schema currsch, Predicate joinpred) {
 		// Split the join predicate. 
-		Plan p = null;
-		String[] joinedFields = joinpred.toString().split("=");
-		if(current.schema().hasField(joinedFields[0]) && myplan.schema().hasField(joinedFields[1])) {			
-			p = new NestedJoinPlan(tx, current, myplan, joinedFields[0], joinedFields[1]);
-		}else if(current.schema().hasField(joinedFields[1]) && myplan.schema().hasField(joinedFields[0])) {
-			p = new NestedJoinPlan(tx, current, myplan, joinedFields[1], joinedFields[0]);
-		}else {
-			return null;
-		}
+		Plan p = new NestedJoinPlan(tx, current, myplan, joinpred);
 		p = addSelectPred(p);
 		return addJoinPred(p, currsch);
 	}

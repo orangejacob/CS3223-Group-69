@@ -32,10 +32,10 @@ public class MergeJoinPlan implements Plan {
 
 		// Lab 4: Merge Join Plan
 		LinkedHashMap<String, Integer> sortlist1 = new LinkedHashMap<>();
-		sortlist1.put(fldname1, -1);
+		sortlist1.put(fldname1, 1);
 
 		LinkedHashMap<String, Integer> sortlist2 = new LinkedHashMap<>();
-		sortlist2.put(fldname2, -1);
+		sortlist2.put(fldname2, 1);
 
 		this.p1 = new SortPlan(tx, p1, sortlist1);
 		this.p2 = new SortPlan(tx, p2, sortlist2);
@@ -103,5 +103,11 @@ public class MergeJoinPlan implements Plan {
 	public Schema schema() {
 		return sch;
 	}
+	
+	// Lab 6: query plan
+	public String toString(){
+		return String.format("[(%s) sort-merge join (%s)](%s = %s)", p1.toString(), p2.toString(), fldname1, fldname2);
+	}
+
 }
 

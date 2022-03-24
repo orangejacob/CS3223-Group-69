@@ -69,4 +69,10 @@ public class ProjectPlan implements Plan {
    public Schema schema() {
       return schema;
    }
+   
+   // Lab 6
+   public String toString() {
+	   return String.format("Project (%s) [%s]", schema.fields(), p.toString());
+	   }
+
 }

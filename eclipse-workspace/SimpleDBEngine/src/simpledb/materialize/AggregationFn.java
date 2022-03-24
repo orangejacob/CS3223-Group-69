@@ -34,4 +34,7 @@ public interface AggregationFn {
     * @return the computed aggregation value
     */
    Constant value();
+   
+   // Lab 6
+   public String toString();
 }

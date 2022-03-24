@@ -58,14 +58,6 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 			currentplan = new DistinctPlan(tx, currentplan, data.fields());
 		}
 
-		/* Lab 3: Sort Plan 
-		 * Execute Plan if only order by
-		 * keyword is detected in query.
-		 * */
-		if(!data.sortFields().isEmpty()) {    	  
-			currentplan = new SortPlan(tx, currentplan, data.sortFields());
-		}
-
 		/* Lab 5: Aggregation Plan
 		 * Execute only if Aggregation
 		 * keyword is detected in query.
@@ -73,6 +65,16 @@ public class HeuristicQueryPlanner implements QueryPlanner {
 		if (!data.groupfields().isEmpty() || !data.aggs().isEmpty()) {
 			currentplan = new GroupByPlan(tx, currentplan, data.groupfields(), data.aggs());
 		}
+
+		/* Lab 3: Sort Plan 
+		 * Execute Plan if only order by
+		 * keyword is detected in query.
+		 * */
+		if(!data.sortFields().isEmpty()) {    	  
+			currentplan = new SortPlan(tx, currentplan, data.sortFields());
+		}
+		
+		System.out.println(currentplan.toString());
 
 		return currentplan;
 

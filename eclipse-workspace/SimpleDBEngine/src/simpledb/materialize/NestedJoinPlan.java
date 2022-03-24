@@ -10,6 +10,7 @@ import java.util.*;
 
 public class NestedJoinPlan implements Plan {
 	private Transaction tx;
+	private Predicate pred;
 	private Plan p1, p2, innerPlan, outerPlan;
 	private String innerFldName, outerFldName;
 	private Schema sch = new Schema();
@@ -25,22 +26,20 @@ public class NestedJoinPlan implements Plan {
 	 * @param tx the calling transaction
 	 */
 
-	public NestedJoinPlan(Transaction tx, Plan p1, Plan p2, String fldname1, String fldname2) {      
+	public NestedJoinPlan(Transaction tx, Plan p1, Plan p2, Predicate pred) {      
 		this.tx = tx;
 		this.p1 = p1;
 		this.p2 = p2;
+		this.pred = pred;
+		System.out.println(pred.toString());
 		sch.addAll(p1.schema());
 		sch.addAll(p2.schema());
 		if (p1.recordsOutput() < p2.recordsOutput()) {
 			this.innerPlan = p2;
 			this.outerPlan = p1;
-			this.innerFldName = fldname2;
-			this.outerFldName = fldname1;
 		}else {
 			this.innerPlan = p1;
 			this.outerPlan = p2;
-			this.innerFldName = fldname1;
-			this.outerFldName = fldname2;
 		}
 	}
 
@@ -53,7 +52,7 @@ public class NestedJoinPlan implements Plan {
 	public Scan open() {
 		Scan inner = this.innerPlan.open();
 		TempTable outer = copyRecordsFrom(new MaterializePlan(tx, this.outerPlan));
-		return new NestedJoinScan(tx, inner, innerFldName, outer, outerFldName);
+		return new NestedJoinScan(tx, inner, innerFldName, outer, outerFldName, pred);
 	}
 
 	/**
@@ -117,5 +116,10 @@ public class NestedJoinPlan implements Plan {
 		dest.close();
 		return t;
 	}
+	
+	// Lab 6: Query Plan
+    public String toString(){
+        return String.format("[(%s) nested join (%s)](%s)", innerPlan.toString(), outerPlan.toString(), pred.toString());
+    }
 }
 

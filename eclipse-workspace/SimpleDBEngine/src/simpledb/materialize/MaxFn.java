@@ -53,4 +53,9 @@ public class MaxFn implements AggregationFn {
 	public Constant value() {
 		return max;
 	}
+	
+	// Lab 6: Query Plan
+	public String toString(){ 
+		return "Max (" +  fldname + ")";
+	}
 }

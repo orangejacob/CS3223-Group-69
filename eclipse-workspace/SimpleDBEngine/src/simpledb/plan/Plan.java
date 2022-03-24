@@ -45,4 +45,10 @@ public interface Plan {
     * @return the query's schema
     */
    public Schema schema();
+   
+   /**
+    * Lab 6: Display query plan
+    * @return the query plan string
+    */
+   public String toString();
 }
